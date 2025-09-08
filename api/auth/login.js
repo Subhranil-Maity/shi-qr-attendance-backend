@@ -1,3 +1,9 @@
+/**
+ * Author: Subhranil Maity
+ * FileName: login.js
+ * Description: API route for user login and JWT generation.
+ */
+
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { connectDB } from "../../config/db.js";

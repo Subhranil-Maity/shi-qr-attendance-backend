@@ -1,3 +1,8 @@
+/**
+ * Author: Subhranil Maity
+ * FileName: db.js
+ * Description: Database connection file for MongoDB using Mongoose.
+ */
 import mongoose from "mongoose";
 
 let cached = global.mongoose;
