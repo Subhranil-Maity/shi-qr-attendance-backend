@@ -16,9 +16,9 @@ export default async function handler(req, res) {
 
   await connectDB();
 
-  const { username, password } = req.body;
+  const { userId, password } = req.body;
 
-  const user = await User.findOne({ username });
+  const user = await User.findOne({ userId });
   if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
   const isMatch = await bcrypt.compare(password, user.passwordHash);
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
   // generate JWT
   const token = jwt.sign(
-    { username: user.username, role: user.role },
+    { userId: user.userId, role: user.role, dbId: String(user._id) },
     process.env.JWT_SECRET,
     { expiresIn: "1h" }
   );

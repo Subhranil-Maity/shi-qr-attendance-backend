@@ -15,28 +15,28 @@ async function seedData() {
   // ----- 1. Seed Users -----
   const users = [
     // Admin
-    { name: "Admin User", username: "A25101300123", password: "admin123", role: "admin" },
+    { name: "Admin User", userId: "A25101300123", password: "admin123", role: "admin" },
 
     // Faculty
-    { name: "Dr. Sharma", username: "F25101300124", password: "faculty123", role: "faculty" },
-    { name: "Dr. Kapoor", username: "F25101300125", password: "faculty123", role: "faculty" },
-    { name: "Dr. Mehta", username: "F25101300126", password: "faculty123", role: "faculty" },
+    { name: "Dr. Sharma", userId: "F25101300124", password: "faculty123", role: "faculty" },
+    { name: "Dr. Kapoor", userId: "F25101300125", password: "faculty123", role: "faculty" },
+    { name: "Dr. Mehta", userId: "F25101300126", password: "faculty123", role: "faculty" },
 
     // Students
-    { name: "Aman Singh", username: "25101300127", password: "student123", role: "student" },
-    { name: "Riya Verma", username: "25101300128", password: "student123", role: "student" },
-    { name: "Karan Patel", username: "25101300129", password: "student123", role: "student" },
-    { name: "Sanya Gupta", username: "25101300130", password: "student123", role: "student" },
-    { name: "Rahul Joshi", username: "25101300131", password: "student123", role: "student" },
-    { name: "Neha Sharma", username: "25101300132", password: "student123", role: "student" }
+    { name: "Aman Singh", userId: "25101300127", password: "student123", role: "student" },
+    { name: "Riya Verma", userId: "25101300128", password: "student123", role: "student" },
+    { name: "Karan Patel", userId: "25101300129", password: "student123", role: "student" },
+    { name: "Sanya Gupta", userId: "25101300130", password: "student123", role: "student" },
+    { name: "Rahul Joshi", userId: "25101300131", password: "student123", role: "student" },
+    { name: "Neha Sharma", userId: "25101300132", password: "student123", role: "student" }
   ];
 
   const savedUsers = {};
   for (let u of users) {
-    let existing = await User.findOne({ username: u.username });
+    let existing = await User.findOne({ userId: u.userId });
     if (existing) {
-      console.log(`⚠️ User already exists: ${u.username}`);
-      savedUsers[u.username] = existing;
+      console.log(`⚠️ User already exists: ${u.userId}`);
+      savedUsers[u.userId] = existing;
       continue;
     }
 
@@ -44,8 +44,8 @@ async function seedData() {
     const newUser = new User({ ...u, passwordHash });
     delete newUser.password;
     const saved = await newUser.save();
-    savedUsers[u.username] = saved;
-    console.log(`✅ Created user: ${u.username} (${u.role})`);
+    savedUsers[u.userId] = saved;
+    console.log(`✅ Created user: ${u.userId} (${u.role})`);
   }
 
   // ----- 2. Seed Classes -----

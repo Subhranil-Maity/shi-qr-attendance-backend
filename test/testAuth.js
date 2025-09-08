@@ -9,17 +9,17 @@ import axios from "axios";
 /**
  * Test login and JWT validation
  * @param {string} baseUrl - Base URL of the API
- * @param {string} username - Username to login
+ * @param {string} userId - userId to login
  * @param {string} password - Password for login
  * @returns {Promise<void>}
  */
-export async function testLoginAndValidate(baseUrl, username, password) {
+export async function testLoginAndValidate(baseUrl, userId, password) {
   try {
-    console.log(`\n🔹 Testing login for user: ${username}`);
+    console.log(`\n🔹 Testing login for user: ${userId}`);
 
     // 1. Login
     const loginRes = await axios.post(`${baseUrl}/api/auth/login`, {
-      username,
+      userId,
       password,
     });
 

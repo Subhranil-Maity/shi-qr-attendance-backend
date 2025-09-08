@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 	return res.status(200).json({
 		message: "Token is valid",
 		user: {
-			username: payload.username,
+			userId: payload.userId,
 			role: payload.role,
 		},
 		iat: payload.iat,
