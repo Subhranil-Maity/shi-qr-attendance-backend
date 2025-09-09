@@ -5,10 +5,10 @@
  * Query params: classId, period=weekly|monthly, mode=days|sessions, from, to, sessions
  */
 
-import { verifyToken } from "../../lib/auth.js";
-import { connectDB } from "../../config/db.js";
-import Session from "../../models/Session.js";
-import Class from "../../models/Class.js";
+import { verifyToken } from "../lib/auth.js";
+import { connectDB } from "../config/db.js";
+import Session from "../models/Session.js";
+import Class from "../models/Class.js";
 
 // export default async function handler(req, res) {
 async function handler(req, res) {

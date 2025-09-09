@@ -3,7 +3,7 @@
  * FileName: testAuth.js
  * Description: Utility API to test login token validation using verifyToken middleware.
  */
-import {verifyToken} from "../../lib/auth.js";
+import {verifyToken} from "../lib/auth.js";
 
 
 export default async function handler(req, res) {
