@@ -8,8 +8,10 @@ import { verifyToken } from "../../lib/auth.js";
 import Session from "../../models/Session.js";
 import {connectDB} from "../../config/db.js";
 import Class from "../../models/Class.js"
+import {cors} from "../../lib/cors.js";
 
 export default async function handler(req, res) {
+    if (cors(req, res)) return;
     if (req.method !== "GET") {
         return res.status(405).json({ error: "Method not allowed. Use GET." });
     }

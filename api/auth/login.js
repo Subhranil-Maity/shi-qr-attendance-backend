@@ -8,9 +8,12 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { connectDB } from "../../config/db.js";
 import User from "../../models/User.js";
+import {cors} from "../../lib/cors.js";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
+    if (cors(req, res)) return;
+
+    if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 

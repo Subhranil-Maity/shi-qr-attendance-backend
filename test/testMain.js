@@ -14,8 +14,8 @@ import {loginFaculty} from "./testLogin.js";
 import {getDynamicAttendanceTrend} from "./testTrendDynamic.js";
 import {getSessionDetails} from "./testSessionDetails.js";
 
-// const BASE_URL = "https://shi-qr-attendance-backend.vercel.app/";
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = "https://shi-qr-attendance-backend.vercel.app/";
+// const BASE_URL = "http://localhost:3000";
 
 // Test cases: userId/password pairs
 const testUsers = [
@@ -42,33 +42,33 @@ async function runAnalyticsTests(token) {
     const trend = await getAttendanceTrend(BASE_URL, token, CLASS_ID);
     console.log("📊 Attendance Trend:", trend);
 
-    // 4️⃣ Dynamic Trend - mode=days (last 30 days)
-    const toDate = new Date();
-    const fromDate = new Date();
-    fromDate.setDate(toDate.getDate() - 30); // last 30 days
-
-    const trendDynamicDays = await getDynamicAttendanceTrend(BASE_URL, token, CLASS_ID, {
-        mode: "days",
-        period: "weekly",
-        from: fromDate.toISOString(),
-        to: toDate.toISOString()
-    });
-    console.log("📊 Dynamic Trend (last 30 days):", trendDynamicDays);
-
-    // 5️⃣ Dynamic Trend - mode=sessions (last 30 sessions)
-    const trendDynamicSessions = await getDynamicAttendanceTrend(BASE_URL, token, CLASS_ID, {
-        mode: "sessions",
-        period: "weekly",
-        sessions: 30
-    });
-    console.log("📊 Dynamic Trend (last 30 sessions):", trendDynamicSessions);
-
+    // // 4️⃣ Dynamic Trend - mode=days (last 30 days)
+    // const toDate = new Date();
+    // const fromDate = new Date();
+    // fromDate.setDate(toDate.getDate() - 30); // last 30 days
+    //
+    // const trendDynamicDays = await getDynamicAttendanceTrend(BASE_URL, token, CLASS_ID, {
+    //     mode: "days",
+    //     period: "weekly",
+    //     from: fromDate.toISOString(),
+    //     to: toDate.toISOString()
+    // });
+    // console.log("📊 Dynamic Trend (last 30 days):", trendDynamicDays);
+    //
+    // // 5️⃣ Dynamic Trend - mode=sessions (last 30 sessions)
+    // const trendDynamicSessions = await getDynamicAttendanceTrend(BASE_URL, token, CLASS_ID, {
+    //     mode: "sessions",
+    //     period: "weekly",
+    //     sessions: 30
+    // });
+    // console.log("📊 Dynamic Trend (last 30 sessions):", trendDynamicSessions);
+    //
 
 }
 (async () => {
-	for (let user of testUsers) {
-		await testLoginAndValidate(BASE_URL, user.userId, user.password);
-	}
+	// for (let user of testUsers) {
+	// 	await testLoginAndValidate(BASE_URL, user.userId, user.password);
+	// }
         await testSessionFlow(BASE_URL);
     await testOverview(BASE_URL)
     const token = await loginFaculty(BASE_URL);
