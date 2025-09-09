@@ -25,7 +25,7 @@ const sessionSchema = new mongoose.Schema(
 
 // Indexes for fast analytics queries
 sessionSchema.index({ year: 1, classId: 1 });
-sessionSchema.index({ sessionId: 1 });
+// sessionSchema.index({ sessionId: 1 });
 sessionSchema.index({ "attendance.userId": 1, "attendance.time": 1 });
 
 export default mongoose.models.Session || mongoose.model("Session", sessionSchema);

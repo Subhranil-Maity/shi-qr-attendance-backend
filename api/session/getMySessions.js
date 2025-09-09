@@ -9,7 +9,7 @@ import { verifyToken } from "../../lib/auth.js";
 import Class from "../../models/Class.js";
 import Session from "../../models/Session.js";
 import {connectDB} from "../../config/db.js";
-
+import mongoose from "mongoose";
 export default async function handler(req, res) {
     if (req.method !== "GET") {
         return res.status(405).json({ error: "Method not allowed. Use GET." });
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
         const payload = verifyToken(req, res);
         if (!payload) return; // handled inside verifyToken
 
-        const { role, userId } = payload;
+        const { role } = payload;
 
         if (role === "student") {
             return res.status(403).json({ error: "Students cannot view sessions" });
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
 
         // 4. Faculty → only sessions of assigned classes
         else if (role === "faculty") {
-            const classes = await Class.find({ assignedTo: userId }, "_id");
+            const classes = await Class.find({ assignedTo: new mongoose.Types.ObjectId(payload._id) }, "_id");
             const classIds = classes.map((c) => c._id);
 
             sessionsQuery = Session.find({ classId: { $in: classIds } });
