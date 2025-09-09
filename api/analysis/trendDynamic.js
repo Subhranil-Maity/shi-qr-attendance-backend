@@ -1,7 +1,8 @@
 /**
  * Author: Subhranil Maity
- * FileName: trend.js
- * Description: Attendance trend by period (weekly or monthly). Query params: classId, period=weekly|monthly, lastN=6
+ * FileName: trendDynamic.js
+ * Description: Attendance trend by period with hybrid mode (days or sessions).
+ * Query params: classId, period=weekly|monthly, mode=days|sessions, from, to, sessions
  */
 
 import { verifyToken } from "../../lib/auth.js";
@@ -23,19 +24,56 @@ export default async function handler(req, res) {
         if (!classId) return res.status(400).json({ error: "Missing classId" });
 
         const period = (req.query.period || "monthly").toLowerCase(); // weekly or monthly
-        const lastN = parseInt(req.query.lastN, 10) || 6;
+        const mode = req.query.mode || "days"; // default mode
 
         const cls = await Class.findOne({ classId }).lean();
         if (!cls) return res.status(404).json({ error: "Class not found" });
         if (role === "faculty" && String(cls.assignedTo) !== requesterId)
             return res.status(403).json({ error: "Forbidden" });
 
-        // choose date format for grouping
+        const studentCount = (cls.students && cls.students.length) || 0;
+
+        // fetch sessions based on mode
+        let sessions = [];
+        if (mode === "sessions") {
+            const lastNSessions = parseInt(req.query.sessions, 10) || 30;
+            sessions = await Session.find({ classId: cls._id })
+                .sort({ classStart: -1 })
+                .limit(lastNSessions)
+                .lean();
+        } else {
+            // days mode
+            const to = req.query.to ? new Date(req.query.to) : new Date();
+            const from = req.query.from
+                ? new Date(req.query.from)
+                : new Date(new Date().setDate(to.getDate() - 30)); // default last 30 days
+
+            sessions = await Session.find({
+                classId: cls._id,
+                classStart: { $gte: from, $lte: to },
+            }).lean();
+        }
+
+        if (sessions.length === 0) {
+            return res.status(200).json({
+                classId: cls.classId,
+                period,
+                trend: [],
+                mode,
+                range: mode === "days"
+                    ? { from: req.query.from || null, to: req.query.to || null }
+                    : { lastNSessions: req.query.sessions || 30 }
+            });
+        }
+
+        const sessionIds = sessions.map(s => s._id);
+
+        // determine grouping format
         const dateFormat = period === "weekly" ? "%Y-%U" : "%Y-%m";
 
-        // aggregate per period: number of sessions, total attendance count
+        // aggregate per period
         const pipeline = [
-            { $match: { classId: cls._id } },
+            { $match: { _id: { $in: sessionIds } } },
             {
                 $project: {
                     period: { $dateToString: { format: dateFormat, date: "$classStart" } },
@@ -49,17 +87,14 @@ export default async function handler(req, res) {
                     attendance: { $sum: "$attendanceCount" },
                 },
             },
-            { $sort: { _id: -1 } }, // newest first
-            { $limit: lastN },
-            { $sort: { _id: 1 } }, // return chronological
+            { $sort: { _id: 1 } }, // chronological
         ];
 
         const results = await Session.aggregate(pipeline);
 
-        const studentCount = (cls.students && cls.students.length) || 0;
-
+        // compute attendance rate per period
         const formatted = results.map((r) => {
-            const possible = r.sessions * studentCount || 1; // avoid division by 0
+            const possible = r.sessions * studentCount || 1;
             return {
                 period: r._id,
                 sessions: r.sessions,
@@ -72,9 +107,14 @@ export default async function handler(req, res) {
             classId: cls.classId,
             period,
             trend: formatted,
+            mode,
+            range: mode === "days"
+                ? { from: req.query.from || null, to: req.query.to || null }
+                : { lastNSessions: req.query.sessions || 30 }
         });
+
     } catch (err) {
-        console.error("Error in trend:", err);
+        console.error("Error in trendDynamic:", err);
         return res.status(500).json({ error: "Server error" });
     }
 }

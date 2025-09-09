@@ -8,8 +8,6 @@ import { verifyToken } from "../../lib/auth.js";
 import { connectDB } from "../../config/db.js";
 import Session from "../../models/Session.js";
 import Class from "../../models/Class.js";
-import User from "../../models/User.js";
-import { Types } from "mongoose";
 
 export default async function handler(req, res) {
     if (req.method !== "GET") return res.status(405).json({ error: "Use GET" });
@@ -24,6 +22,8 @@ export default async function handler(req, res) {
         const classId = req.query.classId;
         if (!classId) return res.status(400).json({ error: "Missing classId query param" });
 
+        const mode = req.query.mode || "days"; // default mode
+
         // fetch class
         const cls = await Class.findOne({ classId }).lean();
         if (!cls) return res.status(404).json({ error: "Class not found" });
@@ -35,8 +35,27 @@ export default async function handler(req, res) {
 
         const studentCount = (cls.students && cls.students.length) || 0;
 
-        // Sessions for this class
-        const sessions = await Session.find({ classId: cls._id }).select("_id").lean();
+        // fetch sessions based on mode
+        let sessions = [];
+        if (mode === "sessions") {
+            const lastNSessions = parseInt(req.query.sessions, 10) || 30;
+            sessions = await Session.find({ classId: cls._id })
+                .sort({ classStart: -1 })
+                .limit(lastNSessions)
+                .lean();
+        } else {
+            // days mode
+            const to = req.query.to ? new Date(req.query.to) : new Date();
+            const from = req.query.from
+                ? new Date(req.query.from)
+                : new Date(new Date().setDate(to.getDate() - 30)); // default last 30 days
+
+            sessions = await Session.find({
+                classId: cls._id,
+                classStart: { $gte: from, $lte: to },
+            }).lean();
+        }
+
         const sessionCount = sessions.length;
 
         if (sessionCount === 0) {
@@ -45,46 +64,35 @@ export default async function handler(req, res) {
                 avgAttendanceRate: 0,
                 atRiskStudents: 0,
                 totalAbsences: 0,
+                sessionCount: 0,
             });
         }
 
-        // total attendance records for this class across sessions
-        const attendanceAgg = await Session.aggregate([
-            { $match: { classId: cls._id } },
-            { $project: { attendanceCount: { $size: { $ifNull: ["$attendance", []] } } } },
-            { $group: { _id: null, totalAttendance: { $sum: "$attendanceCount" } } },
-        ]);
+        const sessionIds = sessions.map(s => s._id);
 
-        const totalAttendance = (attendanceAgg[0] && attendanceAgg[0].totalAttendance) || 0;
-        const possibleAttendances = sessionCount * studentCount;
-        const avgAttendanceRate = possibleAttendances === 0 ? 0 : Math.round((totalAttendance / possibleAttendances) * 100);
-
-        // total absences
-        const totalAbsences = Math.max(0, possibleAttendances - totalAttendance);
-
-        // compute at-risk students count (attendance % < 80)
-        // pipeline: for each session, unwind attendance and count per user, then compute %
+        // Aggregate total attendance per student
         const perStudentAgg = await Session.aggregate([
-            { $match: { classId: cls._id } },
+            { $match: { _id: { $in: sessionIds } } },
             { $unwind: { path: "$attendance", preserveNullAndEmptyArrays: false } },
-            { $group: { _id: "$attendance.user", presents: { $sum: 1 } } },
-            { $project: { _id: 1, presents: 1 } },
+            { $group: { _id: "$attendance.userDbId", presents: { $sum: 1 } } },
         ]);
 
-        // map userId -> presents
         const presentsMap = {};
-        perStudentAgg.forEach((r) => {
-            presentsMap[String(r._id)] = r.presents;
-        });
+        perStudentAgg.forEach(r => { presentsMap[String(r._id)] = r.presents; });
 
-        // student list: count those with attendance% < 80
-        const threshold = 80;
+        // Total attendance and absences
+        let totalAttendance = 0;
         let atRiskCount = 0;
         for (const stuId of (cls.students || [])) {
             const p = presentsMap[String(stuId)] || 0;
-            const pct = Math.round((sessionCount === 0 ? 0 : (p / sessionCount) * 100));
-            if (pct < threshold) atRiskCount++;
+            totalAttendance += p;
+            const pct = Math.round((p / sessionCount) * 100);
+            if (pct < 80) atRiskCount++;
         }
+
+        const possibleAttendances = sessionCount * studentCount;
+        const avgAttendanceRate = possibleAttendances === 0 ? 0 : Math.round((totalAttendance / possibleAttendances) * 100);
+        const totalAbsences = Math.max(0, possibleAttendances - totalAttendance);
 
         return res.status(200).json({
             totalStudents: studentCount,
@@ -92,6 +100,11 @@ export default async function handler(req, res) {
             atRiskStudents: atRiskCount,
             totalAbsences,
             sessionCount,
+            mode,
+            range: mode === "days"
+                ? { from: sessions[sessions.length - 1]?.classStart?.toISOString() || null,
+                    to: sessions[0]?.classStart?.toISOString() || null }
+                : { lastNSessions: sessions.length }
         });
     } catch (err) {
         console.error("Error in overview:", err);
